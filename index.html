@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Ecole V6</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial, sans-serif;}
+    body{background:#060d1c;color:#333;}
+    header{background:#1e3a8a;color:#f5eded;padding:15px;display:flex;justify-content:space-between;align-items:center;font-weight:bold;}
+  .container{padding:20px;max-width:900px;margin:auto;}
+  .card{background:#fff;padding:15px;border-radius:12px;box-shadow:0 4px 8px rgba(0,0,0,0.1);margin-bottom:20px;}
+    input,select,button,textarea{width:100%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;}
+    button{background:#1e3a8a;color:#fff;border:none;cursor:pointer;font-weight:bold;}
+    button:hover{background:#0f2557;}
+  .btn-export{background:#16a34a;}.btn-export:hover{background:#15803d;}
+  .btn-danger{background:#dc2626;}.btn-whatsapp{background:#25D366;}
+    table{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px;}
+    table,th,td{border:1px solid #ddd;text-align:center;padding:8px;}
+    th{background:#1e3a8a;color:#fff;}
+  .profile{text-align:center;padding:20px;background:#e0e7ff;border-radius:15px;margin-bottom:20px;}
+  .profile img{width:80px;height:80px;border-radius:50%;border:3px solid #1e3a8a;}
+  .menu{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+  .menu-btn{background:#fff;padding:20px;border-radius:15px;text-align:center;box-shadow:0 4px 8px rgba(0,0,0,0.1);cursor:pointer;transition:0.2s;}
+  .menu-btn:hover{transform:scale(1.05);}
+  .menu-icon{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:28px;}
+  .page{display:none;} /* TOUTES LES PAGES CACHÉES PAR DÉFAUT */
+  .page.active{display:block;} /* SEULE LA PAGE ACTIVE S'AFFICHE */
+  .login-box{max-width:400px;margin:80px auto;}
+  .cours-item{background:#f1f5f9;padding:10px;border-radius:8px;margin:5px 0;display:flex;justify-content:space-between;}
+  .role-badge{padding:3px 8px;border-radius:20px;font-size:12px;color:#fff;}
+  .admin{background:#1e3a8a}.prof{background:#16a34a}.eleve{background:#f59e0b}
+  .paiement-item{display:flex;justify-content:space-between;align-items:center;background:#020910;padding:8px;border-radius:8px;margin:5px 0;}
+</style>
+</head>
+<body>
+
+<!-- PAGE LOGIN -->
+<div id="page-login" class="page active container login-box">
+    <div class="card">
+        <h2>Connexion</h2>
+        <input type="text" id="user" placeholder="Identifiant">
+        <input type="password" id="pass" placeholder="Mot de passe">
+        <button onclick="login()">Se connecter</button>
+        <p style="font-size:12px;margin-top:10px;"></p>
+    </div>
+</div>
+
+<!-- PAGE ACCUEIL AVEC LES 4 BOUTONS -->
+<div id="page-accueil" class="page">
+<header>
+    <span>☰ Tableau de bord</span>
+    <span id="userInfo"></span>
+</header>
+<div class="container">
+    <div class="profile">
+        <h3 id="profilNom">Nom</h3>
+        <p id="profilFiliere">WIDE Gestion</p>
+    </div>
+
+    <div class="card">
+        <div class="menu">
+            <div class="menu-btn" onclick="goTo('paiement')"><div class="menu-icon" style="background:#fef08a;">💰</div><div>Paiement</div></div>
+            <div class="menu-btn" onclick="goTo('moyenne')"><div class="menu-icon" style="background:#c4b5fd;">📊</div><div>Moyenne</div></div>
+            <div class="menu-btn" onclick="goTo('message')"><div class="menu-icon" style="background:#a5f3fc;">💬</div><div>Message</div></div>
+            <div class="menu-btn" onclick="goTo('cours')"><div class="menu-icon" style="background:#fecaca;">📚</div><div>Cours en ligne</div></div>
+        </div>
+        <div id="adminBtns">
+            <button onclick="goTo('gestion')">⚙️ Gestion Admin</button>
+            <button class="btn-export" onclick="exportExcel()">📥 Exporter Excel</button>
+            <button class="btn-export" onclick="exportPDF()">📄 Exporter PDF</button>
+        </div>
+        <button class="btn-danger" onclick="logout()">Déconnexion</button>
+    </div>
+</div>
+</div>
+
+<!-- PAGE GESTION ADMIN -->
+<div id="page-gestion" class="page">
+<header><span>⚙️ Gestion Admin</span><span id="userInfo2"></span></header>
+<div class="container">
+    <div class="card">
+        <button onclick="goTo('form')">➕ Ajouter Etudiant</button>
+        <button onclick="goTo('formProf')">➕ Ajouter Prof</button>
+        <button onclick="goTo('liste')">👨‍🎓 Liste Utilisateurs</button>
+        <button onclick="goTo('dettes')">📊 Dettes</button>
+        <button onclick="goTo('accueil')">Retour Accueil</button>
+    </div>
+</div>
+</div>
+
+<!-- PAGE FORM ETUDIANT -->
+<div id="page-form" class="page">
+<header><span>➕ Ajouter Etudiant</span></header>
+<div class="container"><div class="card">
+    <input type="text" id="nom" placeholder="Nom">
+    <input type="text" id="prenom" placeholder="Prénom">
+    <input type="text" id="filiere" placeholder="Filière">
+    <select id="annee"><option value="">Choisir Année</option><option>1ère Année</option><option>2ème Année</option><option>3ème Année</option></select>
+    <input type="number" id="frais" placeholder="Frais annuels FCFA">
+    <input type="text" id="tel" placeholder="Numéro WhatsApp ex: 24206xxxxxxx">
+    <input type="text" id="loginEtu" placeholder="Login élève">
+    <input type="password" id="passEtu" placeholder="Mot de passe élève">
+    <button onclick="ajouterEtudiant()">Enregistrer</button>
+    <button onclick="goTo('gestion')">Retour</button>
+</div></div>
+</div>
+
+<!-- PAGE FORM PROF -->
+<div id="page-formProf" class="page">
+<header><span>➕ Ajouter Prof</span></header>
+<div class="container"><div class="card">
+    <input type="text" id="nomProf" placeholder="Nom Prof">
+    <input type="text" id="matiereProf" placeholder="Matière">
+    <input type="text" id="loginProf" placeholder="Login prof">
+    <input type="password" id="passProf" placeholder="Mot de passe prof">
+    <button onclick="ajouterProf()">Enregistrer Prof</button>
+    <button onclick="goTo('gestion')">Retour</button>
+</div></div>
+</div>
+
+<!-- PAGE LISTE -->
+<div id="page-liste" class="page">
+<header><span>👨‍🎓 Liste Utilisateurs</span></header>
+<div class="container"><div class="card">
+    <input type="text" id="search" placeholder="🔍 Rechercher par nom..." onkeyup="recher()">
+    <table id="tableUsers"></table>
+    <button onclick="goTo('gestion')">Retour</button>
+</div></div>
+</div>
+
+<!-- PAGE PAIEMENT -->
+<div id="page-paiement" class="page">
+<header><span>💰 Paiement</span></header>
+<div class="container"><div class="card">
+    <select id="selectEtudiant" onchange="afficherPaiement()"></select>
+    <div id="infoPaiement"></div>
+    <select id="mois"><option>Janvier</option><option>Février</option><option>Mars</option><option>Avril</option><option>Mai</option><option>Juin</option><option>Juillet</option><option>Août</option><option>Septembre</option><option>Octobre</option><option>Novembre</option><option>Décembre</option></select>
+    <input type="number" id="montant" placeholder="Montant payé">
+    <button onclick="payer()">Valider Paiement</button>
+    <button onclick="goTo('accueil')">Retour Accueil</button>
+</div></div>
+</div>
+
+<!-- PAGE MOYENNE -->
+<div id="page-moyenne" class="page">
+<header><span>📊 Moyenne</span></header>
+<div class="container"><div class="card">
+    <select id="selectEtudiantNote" onchange="afficherNotes()"></select>
+    <div id="infoNotes"></div>
+    <div id="formNote">
+        <input type="text" id="matiere" placeholder="Matière">
+        <input type="number" id="note" placeholder="Note sur 20">
+        <input type="number" id="coef" placeholder="Coefficient">
+        <button onclick="ajouterNote()">Ajouter Note</button>
+    </div>
+    <button onclick="goTo('accueil')">Retour Accueil</button>
+</div></div>
+</div>
+
+<!-- PAGE MESSAGE -->
+<div id="page-message" class="page">
+<header><span>💬 Message</span></header>
+<div class="container"><div class="card">
+    <textarea id="msg" placeholder="Écrire un message..." rows="4"></textarea>
+    <button onclick="envoyerMsg()">Envoyer</button>
+    <div id="listeMsg"></div>
+    <button onclick="goTo('accueil')">Retour Accueil</button>
+</div></div>
+</div>
+
+<!-- PAGE COURS -->
+<div id="page-cours" class="page">
+<header><span>📚 Cours en ligne</span></header>
+<div class="container"><div class="card">
+    <div id="formCours">
+        <input type="text" id="titreCours" placeholder="Titre du cours">
+        <input type="file" id="fichierCours">
+        <button onclick="ajouterCours()">Ajouter Cours PDF</button>
+    </div>
+    <div id="listeCours"></div>
+    <button onclick="goTo('accueil')">Retour Accueil</button>
+</div></div>
+</div>
+
+<!-- PAGE DETTES -->
+<div id="page-dettes" class="page">
+<header><span>📊 Dettes</span></header>
+<div class="container"><div class="card">
+    <table id="tableDettes"></table>
+    <button onclick="goTo('gestion')">Retour</button>
+</div></div>
+</div>
+
+<script>
+let users = JSON.parse(localStorage.getItem('users')) || [
+    {id:1, role:'admin', nom:'Admin', prenom:'', login:'admin', pass:'xauxaumi'},
+    {id:2, role:'prof', nom:'Dupont', prenom:'Jean', matiere:'Maths', login:'prof1', pass:'massami'},
+    {id:3, role:'eleve', nom:'MOUKANDA', prenom:'Michelle', filiere:'GENIE INFORMATIQUE', annee:'1ère Année', frais:500000, tel:'24206123456', paiements:[], notes:[], login:'eleve1', pass:'1234'}
+];
+let messages = JSON.parse(localStorage.getItem('messages')) || [];
+let cours = JSON.parse(localStorage.getItem('cours')) || [];
+let logoEcole = localStorage.getItem('logoEcole') || 'assets/images/logo-moi.png';
+let currentUser = null;
+
+window.onload = function(){
+    document.getElementById('logoEcole').src = logoEcole;
+}
+
+// FONCTION POUR CHANGER DE PAGE
+function goTo(page){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+
+    if(page==='accueil' || page==='gestion'){
+        userInfo.innerHTML = `${currentUser.nom} ${currentUser.prenom} <span class="role-badge ${currentUser.role}">${currentUser.role}</span>`;
+        userInfo2.innerHTML = `${currentUser.nom} ${currentUser.prenom}`;
+    }
+    if(page==='liste') chargerListe();
+    if(page==='paiement' || page==='moyenne') chargerSelect();
+    if(page==='dettes') chargerDettes();
+    if(page==='cours') chargerCours();
+    if(page==='message') chargerMessages();
+    if(page==='accueil'){
+        profilNom.innerHTML = `${currentUser.nom} ${currentUser.prenom}`;
+        profilFiliere.innerHTML = currentUser.role==='eleve'? `${currentUser.annee} ${currentUser.filiere}` : currentUser.matiere || 'WIDE Gestion';
+        let roleTexte = currentUser.role==='WIDE Gestion'? 'WIDE Gestion' : currentUser.role==='prof'? 'WIDE Gestion' : 'Elève';
+        userInfo.innerHTML = `${currentUser.nom} ${currentUser.prenom} <span class="role-badge ${currentUser.role}">${roleTexte}</span>`
+        if(currentUser.role!=='admin') adminBtns.style.display='none';
+        if(currentUser.role==='eleve') {formNote.style.display='none'; formCours.style.display='none';}
+    }
+}
+
+function login(){
+    let u = users.find(x=>x.login===user.value && x.pass===pass.value);
+    if(u){
+        currentUser = u;
+        goTo('accueil');
+    }else alert('Identifiants incorrects');
+}
+
+function logout(){ location.reload(); }
+
+function changerLogo(event){
+    let file = event.target.files[0];
+    let reader = new FileReader();
+    reader.onload = function(e){
+        logoEcole = e.target.result;
+        localStorage.setItem('logoEcole', logoEcole);
+        document.getElementById('logoEcole').src = logoEcole;
+    }
+    reader.readAsDataURL(file);
+}
+
+function ajouterEtudiant(){
+    let etu = {id: Date.now(), role:'eleve', nom: nom.value, prenom: prenom.value, filiere: filiere.value,
+               annee: annee.value, frais: parseInt(frais.value), tel:tel.value, paiements: [], notes: [], login:loginEtu.value, pass:passEtu.value};
+    users.push(etu); save(); alert('Etudiant enregistré!');
+    nom.value=prenom.value=filiere.value=annee.value=frais.value=tel.value=loginEtu.value=passEtu.value='';
+    goTo('gestion');
+}
+
+function ajouterProf(){
+    let prof = {id: Date.now(), role:'prof', nom: nomProf.value, prenom:'', matiere:matiereProf.value, login:loginProf.value, pass:passProf.value};
+    users.push(prof); save(); alert('Prof enregistré!');
+    nomProf.value=matiereProf.value=loginProf.value=passProf.value='';
+    goTo('gestion');
+}
+
+function rechercher(){
+    let val = search.value.toLowerCase();
+    let t = document.getElementById('tableUsers');
+    t.innerHTML = '<tr><th>Rôle</th><th>Nom</th><th>Prénom</th><th>Filière/Matière</th><th>Action</th></tr>';
+    users.filter(u=>u.role!=='admin' && (u.nom+u.prenom).toLowerCase().includes(val))
+  .forEach(u=> t.innerHTML += `<tr><td>${u.role}</td><td>${u.nom}</td><td>${u.prenom}</td><td>${u.filiere||u.matiere||''}</td><td><button onclick="supprimer(${u.id})">Supprimer</button></td></tr>`);
+}
+
+function chargerListe(){ rechercher(); }
+
+function chargerSelect(){
+    let s1 = document.getElementById('selectEtudiant');
+    let s2 = document.getElementById('selectEtudiantNote');
+    s1.innerHTML = s2.innerHTML = '<option value="">Choisir un étudiant</option>';
+    users.filter(u=>u.role==='eleve').forEach(e=> s1.innerHTML += s2.innerHTML += `<option value="${e.id}">${e.nom} ${e.prenom}</option>`);
+    if(currentUser.role==='eleve'){ s1.value = s2.value = currentUser.id; afficherPaiement(); afficherNotes(); }
+}
+
+function afficherPaiement(){
+    let e = users.find(x=>x.id==selectEtudiant.value); if(!e) return;
+    let totalPaye = e.paiements.reduce((a,b)=>a+b.montant,0);
+    let reste = e.frais - totalPaye;
+    let html = `<p><b>${e.nom} ${e.prenom}</b></p><p>Frais: ${e.frais} | Payé: ${totalPaye} | Reste: ${reste}</p><hr>`;
+    e.paiements.forEach((p,i)=> html += `<div class="paiement-item">${p.mois} : ${p.montant} FCFA <div><button onclick="imprimerRecu(${e.id},${i})">PDF</button> <button class="btn-whatsapp" onclick="envoyerWhatsApp(${e.id},${i})">WhatsApp</button></div></div>`);
+    infoPaiement.innerHTML = html;
+}
+
+function payer(){
+    let e = users.find(x=>x.id==selectEtudiant.value);
+    e.paiements.push({mois:mois.value, montant:parseInt(montant.value), date:new Date().toLocaleDateString()}); save();
+    afficherPaiement(); montant.value='';
+}
+
+function imprimerRecu(eleveId, indexPaiement){
+    const { jsPDF } = window.jspdf;
+    let e = users.find(x=>x.id==eleveId);
+    let p = e.paiements[indexPaiement];
+    let doc = new jsPDF();
+    if(logoEcole.startsWith('data:image')){
+        doc.addImage(logoEcole, 'PNG', 10, 10, 20, 20);
+    }
+    doc.setFontSize(16);
+    doc.text("RECU DE PAIEMENT", 105, 20, {align:'center'});
+    doc.setFontSize(12);
+    doc.text(`Etablissement: ECOLE DE GESTION`, 10, 40);
+    doc.text(`Nom: ${e.nom} ${e.prenom}`, 10, 50);
+    doc.text(`Filière: ${e.filiere} - ${e.annee}`, 10, 60);
+    doc.text(`Mois: ${p.mois}`, 10, 70);
+    doc.text(`Montant payé: ${p.montant} FCFA`, 10, 80);
+    doc.text(`Date: ${p.date}`, 10, 90);
+    doc.text(`Reste à payer: ${e.frais - e.paiements.reduce((a,b)=>a+b.montant,0)} FCFA`, 10, 100);
+    doc.text("Signature du comptable", 140, 130);
+    doc.save(`Recu_${e.nom}_${p.mois}.pdf`);
+}
+
+function envoyerWhatsApp(eleveId, indexPaiement){
+    let e = users.find(x=>x.id==eleveId);
+    let p = e.paiements[indexPaiement];
+    let message = `Bonjour ${e.nom} ${e.prenom},%0A%0AReçu de paiement:%0A- Mois: ${p.mois}%0A- Montant: ${p.montant} FCFA%0A- Date: ${p.date}%0A- Reste: ${e.frais - e.paiements.reduce((a,b)=>a+b.montant,0)} FCFA%0A%0AMerci.`;
+    let url = `https://wa.me/${e.tel}?text=${message}`;
+    window.open(url, '_blank');
+}
+
+function afficherNotes(){
+    let e = users.find(x=>x.id==selectEtudiantNote.value); if(!e) return;
+    let total = e.notes.reduce((a,b)=>a+b.note*b.coef,0);
+    let coef = e.notes.reduce((a,b)=>a+b.coef,0);
+    let moyenne = coef>0? (total/coef).toFixed(2) : 0;
+    let html = `<p><b>${e.nom} ${e.prenom}</b> - Moyenne: ${moyenne}/20</p><hr>`;
+    e.notes.forEach(n=> html += `<div>${n.matiere}: ${n.note}/20 (coef ${n.coef})</div>`);
+    infoNotes.innerHTML = html;
+}
+function ajouterNote(){
+    let e = users.find(x=>x.id==selectEtudiantNote.value);
+    e.notes.push({matiere:matiere.value, note:parseFloat(note.value), coef:parseFloat(coef.value)}); save();
+    afficherNotes(); matiere.value=note.value=coef.value='';
+}
+
+function envoyerMsg(){
+    messages.push({texte:msg.value, auteur:`${currentUser.nom}`, date:new Date().toLocaleString()});
+    localStorage.setItem('messages', JSON.stringify(messages)); msg.value=''; chargerMessages();
+}
+function chargerMessages(){
+    listeMsg.innerHTML = '<h3>Messages:</h3>';
+    messages.forEach(m=> listeMsg.innerHTML += `<div class="paiement-item"><b>${m.auteur}</b> - ${m.date}<br>${m.texte}</div>`);
+}
+function ajouterCours(){
+    let file = fichierCours.files[0];
+    if(!file) return alert('Choisir un fichier PDF');
+    let reader = new FileReader();
+    reader.onload = function(e){
+        cours.push({id:Date.now(), titre:titreCours.value, fichier:e.target.result, nom:file.name, prof:currentUser.nom});
+        localStorage.setItem('cours', JSON.stringify(cours)); chargerCours();
+        titreCours.value=''; fichierCours.value='';
+    }
+    reader.readAsDataURL(file);
+}
+function chargerCours(){
+    listeCours.innerHTML = '<h3>Cours disponibles:</h3>';
+    cours.forEach(c=> listeCours.innerHTML += `<div class="cours-item">${c.titre} - Prof: ${c.prof} <a href="${c.fichier}" download="${c.nom}">Télécharger</a></div>`);
+}
+function chargerDettes(){
+    let t = document.getElementById('tableDettes');
+    t.innerHTML = '<tr><th>Etudiant</th><th>Frais</th><th>Payé</th><th>Reste</th><th>Statut</th></tr>';
+    users.filter(u=>u.role==='eleve').forEach(e=>{
+        let paye = e.paiements.reduce((a,b)=>a+b.montant,0);
+        let reste = e.frais - paye;
+        t.innerHTML += `<tr><td>${e.nom} ${e.prenom}</td><td>${e.frais}</td><td>${paye}</td><td>${reste}</td><td>${reste<=0?'A jour':'Dette'}</td></tr>`;
+    });
+}
+function supprimer(id){ users = users.filter(u=>u.id!=id); save(); chargerListe(); }
+function save(){ localStorage.setItem('users', JSON.stringify(users)); }
+
+function exportExcel(){
+    let data = users.filter(u=>u.role==='eleve').map(e=>({Nom: e.nom, Prenom: e.prenom, Filiere: e.filiere, Annee: e.annee, Frais: e.frais, Paye: e.paiements.reduce((a,b)=>a+b.montant,0), Reste: e.frais - e.paiements.reduce((a,b)=>a+b.montant,0)}));
+    let ws = XLSX.utils.json_to_sheet(data); let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Etudiants"); XLSX.writeFile(wb, "Liste_Etudiants.xlsx");
+}
+function exportPDF(){
+    const { jsPDF } = window.jspdf; let doc = new jsPDF(); doc.text("Liste des Etudiants", 10, 10); let y=20;
+    users.filter(u=>u.role==='eleve').forEach(e=>{ let paye = e.paiements.reduce((a,b)=>a+b.montant,0); doc.text(`${e.nom} ${e.prenom} - Reste: ${e.frais-paye}`, 10, y); y+=10; });
+    doc.save("Liste_Etudiants.pdf");
+}
+</script>
+</body>
+</html>
