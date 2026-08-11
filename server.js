@@ -8,7 +8,7 @@ app.use (express.json());
 app.use(express.static( 'public'));
 
 const poo = new Pool({ 
-  connectionStrin: process.even.DATABASE_URL,
+  connectionStrin: process.env.DATABASE_URL,
   ssl: rejectUnauthorized: false}
 });
 
@@ -33,5 +33,5 @@ app.get('/api/etudiants' , async (req, res) =>
 res.json(result.row[0]);
 });
 
-const PORT = process.even.PORT || 10000;
-app.listen(PORT, () => console.log(`server running on ${PORT}));
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`server running on ${PORT}`));
