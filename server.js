@@ -6,6 +6,7 @@ app.use ( cors()) ;
 app.use (express.json());
 app.use(express.static( 'public'));
 
+//Route de test
 app.get('/api/etudiants' , async (req, res) => 
   res.json({message: "serveur OK!" });
 });
