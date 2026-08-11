@@ -7,8 +7,8 @@ app.use (express.json());
 app.use(express.static( 'public'));
 
 //Route de test
-app.get('/api/test' , async (req, res) => 
-  res.json({message: "serveur OK! le site est en ligne" });
+app.get('/api/test' , (req, res) => {
+  res.json({ message: "serveur OK! le site est en ligne" });
 });
 
 const PORT = process.env.PORT || 10000;
