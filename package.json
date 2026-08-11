@@ -1,6 +1,7 @@
 {
   "name" : "gestion-ecole-api",
   "version" : "1.0.0",
+  "description": "API de gestion d'ecole",
   "main": "server.js",
   "scripts" : {
     "start" : "node server.js"
